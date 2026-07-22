@@ -1,5 +1,5 @@
 import { GROUPS } from "../lib/constants";
-import { scenarioBadge } from "../lib/standings";
+import { scenarioBadge, clinchInfo } from "../lib/standings";
 import Chip from "../components/Chip";
 import Flag from "../components/Flag";
 import TieResolver from "../components/UI";
@@ -43,24 +43,35 @@ export default function GroupsPage({
               <span className="font-black tracking-widest text-amber-400 text-xl sm:text-2xl">GROUP {g}</span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-base min-w-[520px]">
+              <table className="group-standings-table w-full table-fixed text-base min-w-[640px]">
+                <colgroup>
+                  <col style={{ width: "48px" }} />
+                  <col />
+                  <col style={{ width: "52px" }} />
+                  <col style={{ width: "52px" }} />
+                  <col style={{ width: "52px" }} />
+                  <col style={{ width: "72px" }} />
+                  <col style={{ width: "80px" }} />
+                  <col style={{ width: "64px" }} />
+                </colgroup>
                 <thead>
                   <tr className="text-xs uppercase tracking-wider text-slate-500 border-b border-slate-800">
-                    <th className="text-left px-4 py-2">#</th>
-                    <th className="text-left">Team</th>
-                    <th className="text-center">P</th>
-                    <th className="text-center">W</th>
-                    <th className="text-center">L</th>
-                    <th className="text-center font-bold text-slate-200">Diff</th>
-                    <th className="text-center">🍺Diff</th>
-                    <th className="text-center font-bold text-amber-400">Pts</th>
+                    <th className="text-left px-3 py-2">#</th>
+                    <th className="text-left px-2 py-2">Team</th>
+                    <th className="text-center py-2">P</th>
+                    <th className="text-center py-2">W</th>
+                    <th className="text-center py-2">L</th>
+                    <th className="text-center py-2 font-bold text-slate-200">Diff</th>
+                    <th className="text-center py-2">🍺Diff</th>
+                    <th className="text-center py-2 font-bold text-amber-400">Pts</th>
                   </tr>
                 </thead>
                 <tbody>
                   {d.order.map((id, idx) => {
                     const s = d.stats[id];
-                    const badge = scenarioBadge(id, state.groups[g], matches, state.results);
-                    const qualified = groupsComplete && idx < 2;
+                    const clinch = clinchInfo(id, state.groups[g], matches, state.results, d.order);
+                    const badge = scenarioBadge(id, state.groups[g], matches, state.results, d.order);
+                    const qualified = clinch.clinchedTop2;
                     const isThird = groupsComplete && idx === 2;
                     return (
                       <tr
@@ -69,43 +80,51 @@ export default function GroupsPage({
                           qualified ? "bg-emerald-500/10" : ""
                         } ${celebrate === id ? "animate-pulse bg-emerald-500/25" : ""}`}
                       >
-                        <td className="px-4 py-3 text-slate-500 font-mono text-sm">{idx + 1}</td>
-                        <td>
-                          <div className="flex items-center gap-2 flex-wrap py-1">
-                            <Chip team={teamById(id)} size="sm" />
+                        <td className="px-3 py-3 text-slate-500 font-mono text-sm tabular-nums">
+                          {idx + 1}
+                        </td>
+                        <td className="px-2 py-3 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                            <span className="min-w-0 truncate">
+                              <Chip team={teamById(id)} size="sm" />
+                            </span>
                             {qualified && (
-                              <span className="text-[10px] font-black px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 q-glow">
-                                Q
+                              <span className="shrink-0 text-[10px] font-black px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 q-glow">
+                                {clinch.clinchedFirst ? "Q · 1ST" : clinch.clinchedSecond ? "Q · 2ND" : "Q"}
                               </span>
                             )}
                             {isThird && (
-                              <span className="text-[10px] font-black px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              <span className="shrink-0 text-[10px] font-black px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
                                 3RD→WC?
                               </span>
                             )}
-                            {!groupsComplete && badge && (
-                              <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${badge.cls}`}>
+                            {!qualified && badge && (
+                              <span
+                                className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full border ${badge.cls}`}
+                              >
                                 {badge.text}
                               </span>
                             )}
                           </div>
                         </td>
-                        <td className="text-center text-slate-400">{s.P}</td>
-                        <td className="text-center text-slate-400">{s.W}</td>
-                        <td className="text-center text-slate-400">{s.L}</td>
+                        <td className="text-center text-slate-400 tabular-nums py-3">{s.P}</td>
+                        <td className="text-center text-slate-400 tabular-nums py-3">{s.W}</td>
+                        <td className="text-center text-slate-400 tabular-nums py-3">{s.L}</td>
                         <td
-                          className={`text-center font-black text-lg ${
+                          className={`text-center font-black text-lg tabular-nums py-3 ${
                             s.diff > 0 ? "text-emerald-400" : s.diff < 0 ? "text-rose-400" : "text-slate-400"
                           }`}
                         >
                           {s.diff > 0 ? "+" : ""}
                           {s.diff}
                         </td>
-                        <td className="text-center text-slate-500 text-sm">
+                        <td className="text-center text-slate-500 text-sm tabular-nums py-3">
                           {s.pongDiff > 0 ? "+" : ""}
                           {s.pongDiff}
                         </td>
-                        <td className="text-center font-black text-amber-400 text-xl">{s.pts}</td>
+                        <td className="text-center font-black text-amber-400 text-xl tabular-nums py-3">
+                          {s.pts}
+                        </td>
                       </tr>
                     );
                   })}

@@ -97,8 +97,11 @@ export default function App() {
   );
 
   const bracket = useMemo(
-    () => (state.locked ? seedBracket(groupData, thirdPlace, groupsComplete) : null),
-    [state.locked, thirdPlace, groupData, groupsComplete],
+    () =>
+      state.locked
+        ? seedBracket(groupData, thirdPlace, groupsComplete, matches, state.results)
+        : null,
+    [state.locked, thirdPlace, groupData, groupsComplete, matches, state.results],
   );
 
   const bracketReady = Boolean(bracket?.ready);

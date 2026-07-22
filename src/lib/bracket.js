@@ -1,4 +1,5 @@
 import { GROUPS } from "./constants";
+import { clinchInfo, isGroupFullyScored } from "./standings";
 
 export const BRACKET_SLOTS = {
   QF1: {
@@ -36,26 +37,52 @@ function slot(key, a = null, b = null, extra = {}) {
   };
 }
 
-/** Always returns a QF bracket view — placeholders until groups (+ play-in) resolve. */
-export function seedBracket(groupData, thirdPlace, groupsComplete) {
-  // Empty / in-progress group stage: show structure only
-  if (!groupsComplete || !thirdPlace) {
-    return {
-      QF1: slot("QF1"),
-      QF2: slot("QF2"),
-      QF3: slot("QF3"),
-      QF4: slot("QF4"),
-      ready: false,
-      status: "groups",
-    };
-  }
-
+/** Resolve group winners / runners-up as soon as they mathematically clinch. */
+export function resolveGroupSeeds(groupData, matches, results) {
   const W = {};
   const RU = {};
-  GROUPS.forEach((g) => {
-    W[g] = groupData[g].order[0];
-    RU[g] = groupData[g].order[1];
-  });
+  for (const g of GROUPS) {
+    const d = groupData[g];
+    if (!d?.order?.length) continue;
+    const ids = d.order;
+
+    if (isGroupFullyScored(ids, matches, results)) {
+      W[g] = d.order[0];
+      RU[g] = d.order[1];
+      continue;
+    }
+
+    const infos = Object.fromEntries(
+      ids.map((id) => [id, clinchInfo(id, ids, matches, results, d.order)]),
+    );
+    const first = ids.find((id) => infos[id].clinchedFirst);
+    const second = ids.find((id) => infos[id].clinchedSecond);
+    if (first) W[g] = first;
+    if (second) RU[g] = second;
+    else if (first) {
+      const otherTop2 = ids.filter((id) => id !== first && infos[id].clinchedTop2);
+      if (otherTop2.length === 1) RU[g] = otherTop2[0];
+    }
+  }
+  return { W, RU };
+}
+
+/** Always returns a QF bracket view — fills known seeds early; scoring waits for full resolve. */
+export function seedBracket(groupData, thirdPlace, groupsComplete, matches = [], results = {}) {
+  const { W, RU } = resolveGroupSeeds(groupData, matches, results);
+
+  // Still in group stage (or incomplete) — show whoever has already clinched
+  if (!groupsComplete || !thirdPlace) {
+    return {
+      QF1: slot("QF1", W.A || null, null),
+      QF2: slot("QF2", W.B || null, null),
+      QF3: slot("QF3", W.C || null, RU.A || null),
+      QF4: slot("QF4", RU.B || null, RU.C || null),
+      ready: false,
+      status: "groups",
+      earlySeeds: Boolean(W.A || W.B || W.C || RU.A || RU.B || RU.C),
+    };
+  }
 
   // Play-in pending: known winners/RUs, wildcards TBD
   if (thirdPlace.playinNeeded) {

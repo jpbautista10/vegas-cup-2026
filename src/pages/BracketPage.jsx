@@ -31,7 +31,9 @@ export default function BracketPage({
 
   const statusBanner =
     bracket?.status === "groups"
-      ? "Group stage in progress — slots show who qualifies where. Scoring unlocks when all 18 games (and any play-in) are done."
+      ? bracket.earlySeeds
+        ? "Clinched teams are locking into the bracket as they qualify — knockout scoring unlocks when all group games (and any play-in) finish."
+        : "Group stage in progress — bracket slots fill as teams clinch. Scoring unlocks when all 18 games (and any play-in) are done."
       : bracket?.status === "playin"
         ? "Flip Cup Wildcard Play-In still needed — then knockout scoring unlocks."
         : null;
