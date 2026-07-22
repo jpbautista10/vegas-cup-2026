@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { GAME_META } from "../lib/constants";
-import { flagOf } from "../lib/flags";
+import Flag from "./Flag";
 import Modal from "./Modal";
 
 export default function ScoreModal({ data, teamById, existing, onSave, onClear, onClose }) {
@@ -26,11 +26,11 @@ export default function ScoreModal({ data, teamById, existing, onSave, onClear, 
             <button
               key={id}
               onClick={() => setWinner(id)}
-              className={`min-h-[72px] py-4 rounded-2xl border-2 font-bold text-base transition-all ${
+              className={`min-h-[72px] py-4 rounded-2xl border-2 font-bold text-base transition-all flex flex-col items-center gap-2 ${
                 winner === id ? "border-amber-400 bg-amber-400/15 scale-[1.02]" : "border-slate-700 bg-slate-800/50"
               }`}
             >
-              <span className="text-3xl block mb-1">{flagOf(t?.name)}</span>
+              <Flag name={t?.name} size="xl" />
               {t?.name}
             </button>
           );

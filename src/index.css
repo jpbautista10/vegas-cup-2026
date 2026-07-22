@@ -2,10 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --vc-gold: #f5c842;
-  --vc-teal: #5eead4;
-  --vc-navy: #0b0f1e;
+:root,
+[data-theme="dark"] {
+  --vc-gold: #ffd700;
+  --vc-pink: #ff2d6a;
+  --vc-cyan: #00e5ff;
+  --vc-teal: #00e5ff;
+  --vc-page: radial-gradient(ellipse 120% 80% at 50% -10%, #3a1528 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 50%, rgba(255, 45, 106, 0.12) 0%, transparent 45%),
+    radial-gradient(ellipse 70% 40% at 0% 80%, rgba(0, 229, 255, 0.08) 0%, transparent 40%),
+    linear-gradient(175deg, #07050a 0%, #120810 40%, #0a0c12 100%);
+  --vc-page-solid: #07050a;
+  --vc-header: rgba(8, 5, 10, 0.92);
+  --vc-surface: rgba(22, 14, 20, 0.88);
+  --vc-surface-solid: #16101a;
+  --vc-input: #1e1520;
+  --vc-border: #4a3540;
+  --vc-border-subtle: #2a1c24;
+  --vc-fg: #f8f0e8;
+  --vc-muted: #a89890;
+  --vc-overlay: rgba(5, 2, 8, 0.88);
+  --vc-hover: rgba(255, 215, 0, 0.06);
+  --vc-title-shadow: 0 0 8px rgba(255, 215, 0, 0.9), 0 0 24px rgba(255, 45, 106, 0.45);
+  --vc-now-playing: linear-gradient(105deg, rgba(255, 215, 0, 0.16), rgba(255, 45, 106, 0.12) 55%, rgba(0, 229, 255, 0.08));
+  --vc-connector: rgba(0, 229, 255, 0.45);
+}
+
+/* Desert-day Vegas — sand, pool turquoise, casino gold (not purple cream) */
+[data-theme="light"] {
+  --vc-gold: #b8860b;
+  --vc-pink: #c2185b;
+  --vc-cyan: #0e7490;
+  --vc-teal: #0e7490;
+  --vc-page: linear-gradient(175deg, #f7efe3 0%, #efe4d4 45%, #e8f4f6 100%);
+  --vc-page-solid: #f7efe3;
+  --vc-header: rgba(247, 239, 227, 0.94);
+  --vc-surface: rgba(255, 252, 247, 0.95);
+  --vc-surface-solid: #fffdf8;
+  --vc-input: #f3ebe0;
+  --vc-border: #d4c4a8;
+  --vc-border-subtle: #e8dcc8;
+  --vc-fg: #1c1410;
+  --vc-muted: #6b5a4e;
+  --vc-overlay: rgba(28, 20, 16, 0.45);
+  --vc-hover: rgba(184, 134, 11, 0.08);
+  --vc-title-shadow: 0 0 12px rgba(184, 134, 11, 0.35);
+  --vc-now-playing: linear-gradient(105deg, rgba(184, 134, 11, 0.18), rgba(194, 24, 91, 0.1));
+  --vc-connector: rgba(14, 116, 144, 0.5);
 }
 
 html,
@@ -16,8 +59,317 @@ body,
 
 body {
   margin: 0;
-  background: #0b0f1e;
+  background: var(--vc-page-solid);
+  color: var(--vc-fg);
+  font-family: Oswald, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.font-display {
+  font-family: "Bebas Neue", Impact, sans-serif;
+}
+
+.vegas-logo-badge {
+  border: 2px solid rgba(255, 215, 0, 0.7);
+  background: linear-gradient(180deg, #2a1a08 0%, #0a0604 100%);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.35), inset 0 0 12px rgba(255, 45, 106, 0.15);
+}
+
+.vegas-logo-gold {
+  color: #ffd700;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.95), 0 0 18px rgba(255, 180, 0, 0.65),
+    0 0 36px rgba(255, 45, 106, 0.35);
+}
+
+.vegas-logo-pink {
+  color: #ff2d6a;
+  text-shadow: 0 0 6px rgba(255, 45, 106, 0.95), 0 0 18px rgba(255, 45, 106, 0.55),
+    0 0 32px rgba(255, 215, 0, 0.25);
+}
+
+.vegas-logo-cyan {
+  color: #00e5ff;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.7);
+}
+
+.vegas-logo-tagline {
+  color: rgba(196, 165, 116, 0.9);
+}
+
+[data-theme="light"] .vegas-logo-badge {
+  border-color: rgba(184, 134, 11, 0.7);
+  background: linear-gradient(180deg, #fff8e8 0%, #f0e0c8 100%);
+  box-shadow: 0 2px 12px rgba(184, 134, 11, 0.25);
+}
+
+.vegas-logo-badge--slot {
+  border-color: rgba(255, 45, 106, 0.65);
+  box-shadow: 0 0 18px rgba(255, 45, 106, 0.35), inset 0 0 10px rgba(255, 215, 0, 0.12);
+}
+
+[data-theme="light"] .vegas-logo-badge--slot {
+  border-color: rgba(194, 24, 91, 0.55);
+  box-shadow: 0 2px 10px rgba(194, 24, 91, 0.2);
+}
+
+[data-theme="light"] .vegas-logo-gold {
+  color: #9a6b08;
+  text-shadow: none;
+}
+
+[data-theme="light"] .vegas-logo-pink {
+  color: #c2185b;
+  text-shadow: none;
+}
+
+[data-theme="light"] .vegas-logo-cyan {
+  color: #0e7490;
+  text-shadow: none;
+}
+
+[data-theme="light"] .vegas-logo-tagline {
+  color: #6b5a4e;
+}
+
+.champion-jackpot-label {
+  color: #ff2d6a;
+  text-shadow: 0 0 12px rgba(255, 45, 106, 0.6);
+}
+
+.champion-name {
+  color: #ffd700;
+  text-shadow: var(--vc-title-shadow);
+}
+
+[data-theme="light"] .champion-jackpot-label {
+  color: #9f1239;
+  text-shadow: none;
+}
+
+[data-theme="light"] .champion-name {
+  color: #1c1410;
+  text-shadow: none;
+}
+
+/* Strip night texture — keep ::before behind content without overriding child position
+   (overriding position:fixed broke score / PIN modals). */
+.vegas-strip {
+  position: relative;
+  isolation: isolate;
+}
+
+.vegas-strip::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.35;
+  background-image: radial-gradient(1px 1px at 20px 30px, rgba(255, 215, 0, 0.45), transparent),
+    radial-gradient(1px 1px at 80px 120px, rgba(255, 45, 106, 0.35), transparent),
+    radial-gradient(1px 1px at 160px 70px, rgba(0, 229, 255, 0.3), transparent);
+  background-size: 200px 180px;
+}
+
+[data-theme="light"] .vegas-strip::before {
+  opacity: 0.12;
+  background-image: radial-gradient(1px 1px at 20px 30px, rgba(184, 134, 11, 0.35), transparent),
+    radial-gradient(1px 1px at 80px 120px, rgba(194, 24, 91, 0.2), transparent);
+}
+
+.neon-border-gold {
+  border-color: rgba(255, 215, 0, 0.45);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.15);
+}
+
+.neon-tab-active {
+  background: linear-gradient(180deg, #ffe566 0%, #ffd700 40%, #e6a800 100%);
+  color: #1a0a08;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.45), 0 0 28px rgba(255, 45, 106, 0.2);
+}
+
+[data-theme="light"] .neon-tab-active {
+  background: linear-gradient(180deg, #1c1410 0%, #2a2018 100%);
+  color: #ffd700;
+  box-shadow: 0 2px 10px rgba(28, 20, 16, 0.2);
+}
+
+/* Theme toggle: gold on night; dark chip on day so sun/moon stay readable */
+.theme-toggle {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 2px solid #ffd700;
+  background: #ffd700;
+  color: #1a0a08;
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
+}
+
+[data-theme="light"] .theme-toggle {
+  border-color: #1c1410;
+  background: #1c1410;
+  color: #ffe566;
+  box-shadow: 0 2px 8px rgba(28, 20, 16, 0.2);
+}
+
+.header-undo {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 45, 106, 0.4);
+  color: #ff9fbf;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+[data-theme="light"] .header-undo {
+  border-color: #c2185b;
+  color: #9f1239;
+  background: rgba(194, 24, 91, 0.08);
+}
+
+/* —— Light-mode remaps for existing dark Tailwind utilities —— */
+[data-theme="light"] .text-slate-100 {
+  color: #1c1410;
+}
+[data-theme="light"] .text-slate-200 {
+  color: #2a2018;
+}
+[data-theme="light"] .text-slate-300 {
+  color: #3d3228;
+}
+[data-theme="light"] .text-slate-400 {
+  color: #6b5a4e;
+}
+[data-theme="light"] .text-slate-500 {
+  color: #7a6a5c;
+}
+[data-theme="light"] .text-slate-600 {
+  color: #8a7a6c;
+}
+
+[data-theme="light"] .bg-slate-900 {
+  background-color: #fffdf8;
+}
+[data-theme="light"] .bg-slate-900\/30,
+[data-theme="light"] .bg-slate-900\/40,
+[data-theme="light"] .bg-slate-900\/50,
+[data-theme="light"] .bg-slate-900\/60,
+[data-theme="light"] .bg-slate-900\/80,
+[data-theme="light"] .bg-slate-900\/90 {
+  background-color: #fffdf8;
+}
+[data-theme="light"] .bg-slate-800 {
+  background-color: #f3ebe0;
+}
+[data-theme="light"] .bg-slate-800\/40,
+[data-theme="light"] .bg-slate-800\/50,
+[data-theme="light"] .bg-slate-800\/60 {
+  background-color: #f3ebe0;
+}
+[data-theme="light"] .bg-slate-900\/20 {
+  background-color: rgba(255, 253, 248, 0.7);
+}
+[data-theme="light"] .bg-amber-500\/5 {
+  background-color: rgba(184, 134, 11, 0.1);
+}
+[data-theme="light"] .bg-amber-500\/15 {
+  background-color: rgba(184, 134, 11, 0.16);
+}
+[data-theme="light"] .bg-teal-500\/10,
+[data-theme="light"] .bg-teal-500\/15 {
+  background-color: rgba(14, 116, 144, 0.12);
+}
+
+[data-theme="light"] .border-slate-600,
+[data-theme="light"] .border-slate-700,
+[data-theme="light"] .border-slate-700\/60,
+[data-theme="light"] .border-slate-700\/80 {
+  border-color: #d4c4a8;
+}
+[data-theme="light"] .border-slate-800,
+[data-theme="light"] .border-slate-800\/40,
+[data-theme="light"] .border-slate-800\/50,
+[data-theme="light"] .border-slate-800\/60 {
+  border-color: #e8dcc8;
+}
+
+[data-theme="light"] .hover\:bg-white\/5:hover {
+  background-color: rgba(28, 20, 16, 0.04);
+}
+[data-theme="light"] .hover\:text-slate-200:hover {
+  color: #1c1410;
+}
+[data-theme="light"] .hover\:border-slate-400:hover {
+  border-color: #b8a488;
+}
+
+[data-theme="light"] .text-amber-400,
+[data-theme="light"] .text-amber-300 {
+  color: #b8860b;
+}
+[data-theme="light"] .text-emerald-400,
+[data-theme="light"] .text-emerald-300 {
+  color: #047857;
+}
+[data-theme="light"] .text-rose-400,
+[data-theme="light"] .text-rose-300,
+[data-theme="light"] .text-rose-200 {
+  color: #c2185b;
+}
+[data-theme="light"] .text-teal-300 {
+  color: #0e7490;
+}
+[data-theme="light"] .text-sky-300 {
+  color: #0e7490;
+}
+[data-theme="light"] .text-amber-400\/80,
+[data-theme="light"] .text-amber-400\/90 {
+  color: rgba(184, 134, 11, 0.85);
+}
+
+[data-theme="light"] .bg-amber-500\/8,
+[data-theme="light"] .bg-amber-500\/10,
+[data-theme="light"] .bg-amber-500\/15 {
+  background-color: rgba(184, 134, 11, 0.14);
+}
+[data-theme="light"] .bg-emerald-500\/5,
+[data-theme="light"] .bg-emerald-500\/10,
+[data-theme="light"] .bg-emerald-500\/25 {
+  background-color: rgba(16, 185, 129, 0.12);
+}
+[data-theme="light"] .bg-rose-500\/10,
+[data-theme="light"] .bg-rose-500\/25 {
+  background-color: rgba(194, 24, 91, 0.1);
+}
+[data-theme="light"] .bg-teal-400\/10,
+[data-theme="light"] .bg-teal-400\/15 {
+  background-color: rgba(14, 116, 144, 0.1);
+}
+[data-theme="light"] .border-teal-400\/50 {
+  border-color: rgba(14, 116, 144, 0.4);
+}
+[data-theme="light"] .hover\:border-teal-300\/60:hover {
+  border-color: rgba(14, 116, 144, 0.55);
+}
+[data-theme="light"] .bg-amber-400\/15,
+[data-theme="light"] .bg-amber-400\/20 {
+  background-color: rgba(184, 134, 11, 0.18);
+}
+[data-theme="light"] .bg-amber-900\/15 {
+  background-color: rgba(184, 134, 11, 0.1);
+}
+
+[data-theme="light"] .from-amber-500\/10,
+[data-theme="light"] .from-amber-500\/15 {
+  --tw-gradient-from: rgba(184, 134, 11, 0.16) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(184 134 11 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
 }
 
 @keyframes vc-fall {
@@ -26,6 +378,26 @@ body {
   }
   100% {
     transform: translateY(108vh) rotate(720deg);
+  }
+}
+
+@keyframes vc-money-fall {
+  0% {
+    transform: translate3d(0, -4vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  25% {
+    transform: translate3d(var(--vc-sway, 16px), 25vh, 0) rotate(90deg);
+  }
+  50% {
+    transform: translate3d(calc(var(--vc-sway, 16px) * -1), 55vh, 0) rotate(180deg);
+  }
+  75% {
+    transform: translate3d(var(--vc-sway, 16px), 80vh, 0) rotate(270deg);
+  }
+  100% {
+    transform: translate3d(0, 110vh, 0) rotate(360deg);
+    opacity: 0.85;
   }
 }
 
@@ -43,13 +415,41 @@ body {
 @keyframes qGlow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.35);
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.35);
   }
   50% {
-    box-shadow: 0 0 12px 2px rgba(52, 211, 153, 0.55);
+    box-shadow: 0 0 14px 2px rgba(255, 45, 106, 0.45);
   }
 }
 
 .q-glow {
   animation: qGlow 2s ease-in-out infinite;
+}
+
+[data-theme="light"] .q-glow {
+  animation-name: qGlowLight;
+}
+
+@keyframes qGlowLight {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(184, 134, 11, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 10px 2px rgba(194, 24, 91, 0.35);
+  }
+}
+
+@keyframes neonPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.neon-pulse {
+  animation: neonPulse 2.8s ease-in-out infinite;
 }

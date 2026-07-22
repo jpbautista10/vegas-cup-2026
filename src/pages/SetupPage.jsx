@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { GROUPS } from "../lib/constants";
-import { flagOf } from "../lib/flags";
+import { GROUPS, FINAL_BEST_OF_OPTIONS, winsNeeded } from "../lib/constants";
+import Flag from "../components/Flag";
 import { Section } from "../components/UI";
 
 export default function SetupPage({
@@ -19,6 +19,8 @@ export default function SetupPage({
   fileRef,
   fullReset,
   confirmReset,
+  theme,
+  toggleTheme,
 }) {
   const [revealed, setRevealed] = useState({ A: 3, B: 3, C: 3 });
   const [drawing, setDrawing] = useState(false);
@@ -63,23 +65,23 @@ export default function SetupPage({
         </div>
       )}
       <Section title="🌍 Teams (exactly 9)">
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {state.teams.map((t, i) => (
-            <div key={t.id} className="rounded-2xl border border-slate-700 bg-slate-900/40 p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-3xl w-10 text-center">{flagOf(t.name)}</span>
+            <div key={t.id} className="rounded-2xl border border-slate-700 bg-slate-900/40 p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                <Flag name={t.name} size="lg" className="shrink-0" />
                 <input
                   disabled={!canEdit || state.locked}
                   value={t.name}
                   placeholder={`Country ${i + 1} (e.g. Mexico)`}
                   onChange={(e) => updateTeam(t.id, { name: e.target.value })}
-                  className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-3 py-3 text-base font-bold min-h-[48px]"
+                  className="flex-1 min-w-0 bg-slate-800 border border-slate-600 rounded-xl px-2 sm:px-3 py-2 sm:py-3 text-sm sm:text-base font-bold min-h-[44px]"
                 />
                 {!state.locked && (
                   <button
                     disabled={!canEdit}
                     onClick={() => removeTeam(t.id)}
-                    className="text-rose-400 text-base px-3 min-h-[44px]"
+                    className="text-rose-400 text-base px-2 min-h-[44px] shrink-0"
                   >
                     ✕
                   </button>
@@ -91,42 +93,40 @@ export default function SetupPage({
                     key={pi}
                     disabled={!canEdit}
                     value={p}
-                    placeholder={`Player ${pi + 1}`}
+                    placeholder={`P${pi + 1}`}
                     onChange={(e) =>
                       updateTeam(t.id, {
                         players: t.players.map((x, xi) => (xi === pi ? e.target.value : x)),
                       })
                     }
-                    className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm w-32 min-h-[44px]"
+                    className="bg-slate-800 border border-slate-700 rounded-xl px-2 py-1.5 text-sm w-[5.5rem] min-h-[40px]"
                   />
                 ))}
                 <button
                   disabled={!canEdit}
                   onClick={() => updateTeam(t.id, { players: [...t.players, ""] })}
-                  className="text-sm text-amber-400 font-bold min-h-[44px] px-2"
+                  className="text-sm text-amber-400 font-bold min-h-[40px] px-1"
                 >
-                  + player
+                  +
                 </button>
                 {t.players.length > 1 && (
                   <button
                     disabled={!canEdit}
                     onClick={() => updateTeam(t.id, { players: t.players.slice(0, -1) })}
-                    className="text-sm text-slate-500 min-h-[44px] px-2"
+                    className="text-sm text-slate-500 min-h-[40px] px-1"
                   >
-                    − player
+                    −
                   </button>
                 )}
-                <span className="text-xs text-slate-500 ml-auto">
-                  roster size = tiebreaker #4 (smaller wins)
-                </span>
               </div>
+              <p className="text-[10px] text-slate-500 mt-2">roster = tiebreaker #4 (smaller wins)</p>
             </div>
           ))}
           {!state.locked && state.teams.length < 9 && (
             <button
               disabled={!canEdit}
               onClick={() => requireEdit(addTeam)}
-              className="w-full min-h-[52px] py-3 rounded-2xl border-2 border-dashed border-slate-600 text-base text-slate-400 hover:border-amber-500/50 hover:text-amber-300 transition-colors"
+              className="w-full min-h-[52px] py-3 rounded-2xl border-2 border-dashed border-slate-600 text-base text-slate-400 hover:border-amber-500/50 hover:text-amber-300 transition-colors sm:col-span-2 lg:col-span-3"
             >
               + Add team ({state.teams.length}/9)
             </button>
@@ -153,10 +153,10 @@ export default function SetupPage({
                   {state.groups[g].slice(0, revealed[g] ?? 3).map((id, idx) => (
                     <p
                       key={id}
-                      className="text-base py-1 animate-[fadeIn_0.3s_ease]"
+                      className="text-base py-1 animate-[fadeIn_0.3s_ease] inline-flex items-center gap-2 w-full"
                       style={{ animationDelay: `${idx * 50}ms` }}
                     >
-                      {flagOf(teamById(id)?.name)} {teamById(id)?.name}
+                      <Flag name={teamById(id)?.name} size="sm" /> {teamById(id)?.name}
                     </p>
                   ))}
                   {state.groups[g].length === 0 && <p className="text-sm text-slate-600 italic">—</p>}
@@ -171,6 +171,50 @@ export default function SetupPage({
               🚀 START TOURNAMENT (locks teams & groups)
             </button>
           </>
+        )}
+      </Section>
+
+      <Section title="🎨 Appearance">
+        <p className="text-base text-slate-400 mb-3">Switch between stadium night (dark) and daytime (light).</p>
+        <button type="button" onClick={toggleTheme} className="theme-toggle !min-h-[52px] !px-6 !text-base">
+          {theme === "dark" ? "☀ Switch to Light Mode" : "☾ Switch to Dark Mode"}
+        </button>
+      </Section>
+
+      <Section title="🏆 Final format">
+        <p className="text-base text-slate-400 mb-3 leading-relaxed">
+          Override how many beer pong games make the Final. First team to{" "}
+          <b className="text-amber-400">{winsNeeded(state.finalBestOf || 3)}</b> wins is champion.
+          Editable until the first Final game is recorded
+          {state.locked ? " (even after the tournament has started)" : ""}.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {FINAL_BEST_OF_OPTIONS.map((n) => {
+            const active = (state.finalBestOf || 3) === n;
+            const finalStarted = (state.ko?.F || []).length > 0;
+            return (
+              <button
+                key={n}
+                type="button"
+                disabled={finalStarted}
+                onClick={() =>
+                  requireEdit(() => setState((s) => ({ ...s, finalBestOf: n })))
+                }
+                className={`min-h-[48px] px-5 py-3 rounded-xl border-2 font-black text-base transition-all disabled:opacity-40 ${
+                  active
+                    ? "border-amber-400 bg-amber-400 text-slate-900"
+                    : "border-slate-600 text-slate-300 hover:border-amber-400/50"
+                }`}
+              >
+                Best of {n}
+              </button>
+            );
+          })}
+        </div>
+        {(state.ko?.F || []).length > 0 && (
+          <p className="text-sm text-rose-400 font-bold mt-3">
+            Final already underway — use Reset final on the Bracket tab to change length.
+          </p>
         )}
       </Section>
 

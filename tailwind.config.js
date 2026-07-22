@@ -4,9 +4,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        gold: "#F5C842",
-        teal: "#5eead4",
-        navy: "#0b0f1e",
+        gold: "#ffd700",
+        neonpink: "#ff2d6a",
+        neoncyan: "#00e5ff",
+        strip: "#0a0608",
+      },
+      fontFamily: {
+        display: ['"Bebas Neue"', "Impact", "sans-serif"],
+        sans: ['Oswald', "system-ui", "sans-serif"],
       },
     },
   },

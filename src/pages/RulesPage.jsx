@@ -94,8 +94,11 @@ export default function RulesPage() {
           declare before the match.
         </p>
       </R>
-      <R t="🏆 THE FINAL — Beer Pong, Best of 3">
-        <p>Best of 3 full games of pong. Same rules as group stage, plus:</p>
+      <R t="🏆 THE FINAL — Beer Pong, Best of N">
+        <p>
+          Final length is configurable in <b>Setup → Final format</b> (default best of 3). First to a majority
+          of games wins (Bo1 = 1, Bo3 = 2, Bo5 = 3, Bo7 = 4). Same rules as group stage, plus:
+        </p>
         <p>
           <b>UNLIMITED REBUTTAL:</b> when the last cup is sunk, the trailing team shoots until they miss. Clear
           ALL remaining cups without missing = overtime (3-cup rack each, sudden death, rebuttal applies
@@ -105,13 +108,13 @@ export default function RulesPage() {
       </R>
       <R t="📅 SCHEDULE OVERVIEW">
         <p>
-          <b>Day 1:</b> Draw ceremony → Round 1: Beer Pong (Games 1–9) → Halftime → Round 2: Cornhole (Games
-          10–18) → 3rd-place ranking → Flip Cup Play-In if needed (nightcap). Every pairing plays twice with a
-          long rest between their games.
+          <b>Day 1:</b> Draw ceremony → 9 parallel slots with Beer Pong + Cornhole running at the same time
+          (different groups so no team is double-booked) → teams switch stations for their second game →
+          3rd-place ranking → Flip Cup Play-In if needed (nightcap).
         </p>
         <p>
           <b>Day 2:</b> QF1–QF4 Battle Raft (midday, pool) → SF1–SF2 Cornhole (afternoon) → 3rd Place Flip Cup
-          (evening) → THE FINAL, Beer Pong Bo3, under the lights.
+          (evening) → THE FINAL, Beer Pong (best-of set in Setup), under the lights.
         </p>
         <p>
           Total: 18 group games + up to 1 play-in + 4 QF + 2 SF + 1 bronze + Final (2–3 games) ={" "}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { flagOf } from "../lib/flags";
+import Flag from "./Flag";
 import Modal from "./Modal";
 
 export default function KOModal({ data, teamById, onSave, onClose }) {
@@ -19,11 +19,11 @@ export default function KOModal({ data, teamById, onSave, onClose }) {
             <button
               key={id}
               onClick={() => setWinner(id)}
-              className={`min-h-[72px] py-4 rounded-2xl border-2 font-bold text-base ${
+              className={`min-h-[72px] py-4 rounded-2xl border-2 font-bold text-base flex flex-col items-center gap-2 ${
                 winner === id ? "border-amber-400 bg-amber-400/15" : "border-slate-700 bg-slate-800/50"
               }`}
             >
-              <span className="text-3xl block mb-1">{flagOf(t?.name)}</span>
+              <Flag name={t?.name} size="xl" />
               {t?.name}
             </button>
           );

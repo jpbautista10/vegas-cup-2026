@@ -19,9 +19,20 @@ const ISO = {
   kosovo: "XK", wales: "GB", monaco: "MC", liechtenstein: "LI", andorra: "AD",
 };
 
+export function isoOf(name) {
+  if (!name) return null;
+  return ISO[name.trim().toLowerCase()] || null;
+}
+
+/** Emoji flag — for toasts / plain-text only. Prefer <Flag /> in UI. */
 export function flagOf(name) {
-  if (!name) return "🏳️";
-  const code = ISO[name.trim().toLowerCase()];
+  const code = isoOf(name);
   if (!code) return "🏳️";
   return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+}
+
+export function flagUrl(name, width = 80) {
+  const code = isoOf(name);
+  if (!code) return null;
+  return `https://flagcdn.com/w${width}/${code.toLowerCase()}.png`;
 }

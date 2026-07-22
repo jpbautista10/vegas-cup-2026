@@ -6,12 +6,16 @@ export function sortGroup(teamIds, matches, results, teams, manual, manualKeyPre
     stats[id] = teamStats(id, matches, results);
   });
   const roster = (id) => teams.find((t) => t.id === id)?.players?.filter(Boolean).length || 99;
+  // Only ask for flip-cup once every group game is scored — not while standings are still in flux
+  const groupComplete =
+    matches.length > 0 && matches.every((m) => m.games.every((g) => results[g.id]?.winner));
 
   const arr = [...teamIds];
   arr.sort((a, b) => stats[b].pts - stats[a].pts);
   const out = [];
   let i = 0;
   const unresolved = [];
+  const seen = new Set();
   while (i < arr.length) {
     let j = i;
     while (j < arr.length && stats[arr[j]].pts === stats[arr[i]].pts) j++;
@@ -19,6 +23,7 @@ export function sortGroup(teamIds, matches, results, teams, manual, manualKeyPre
     if (cluster.length === 1) {
       out.push(cluster[0]);
     } else {
+      let needsManual = false;
       const sorted = [...cluster].sort((a, b) => {
         if (cluster.length === 2) {
           const h = h2hPts(b, a, matches, results) - h2hPts(a, b, matches, results);
@@ -29,9 +34,16 @@ export function sortGroup(teamIds, matches, results, teams, manual, manualKeyPre
         const key = manualKeyPrefix + [...cluster].sort().join("_");
         const order = manual[key];
         if (order) return order.indexOf(a) - order.indexOf(b);
-        unresolved.push(cluster);
+        needsManual = true;
         return 0;
       });
+      if (groupComplete && needsManual) {
+        const key = [...cluster].sort().join("_");
+        if (!seen.has(key)) {
+          seen.add(key);
+          unresolved.push(cluster);
+        }
+      }
       out.push(...sorted);
     }
     i = j;

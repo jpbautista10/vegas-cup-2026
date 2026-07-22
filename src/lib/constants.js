@@ -17,7 +17,15 @@ export const DEFAULT_STATE = {
   playinWinner: null,
   ko: { QF1: null, QF2: null, QF3: null, QF4: null, SF1: null, SF2: null, TP: null, F: [] },
   pin: "",
+  finalBestOf: 3, // Final beer pong series length (odd): first to ceil(n/2) wins
 };
+
+export const FINAL_BEST_OF_OPTIONS = [1, 3, 5, 7];
+
+export function winsNeeded(bestOf) {
+  const n = Number(bestOf) || 3;
+  return Math.ceil(n / 2);
+}
 
 export const uid = () => Math.random().toString(36).slice(2, 9);
 export const deep = (o) => JSON.parse(JSON.stringify(o));

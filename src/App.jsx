@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { GROUPS, DEFAULT_STATE, uid, deep } from "./lib/constants";
+import { GROUPS, DEFAULT_STATE, uid, deep, winsNeeded } from "./lib/constants";
 import { flagOf } from "./lib/flags";
-import { buildSchedule, flatGames } from "./lib/schedule";
+import { buildSchedule } from "./lib/schedule";
 import { teamStats } from "./lib/stats";
 import { sortGroup } from "./lib/standings";
 import { seedBracket, rankThirdPlace } from "./lib/bracket";
 import { loadState, saveState } from "./lib/storage";
+import { applyTheme, loadTheme, saveTheme } from "./lib/theme";
 import Confetti from "./components/Confetti";
 import Modal from "./components/Modal";
 import ScoreModal from "./components/ScoreModal";
 import KOModal from "./components/KOModal";
+import VegasLogo from "./components/VegasLogo";
 import SchedulePage from "./pages/SchedulePage";
 import GroupsPage from "./pages/GroupsPage";
 import BracketPage from "./pages/BracketPage";
@@ -19,6 +21,7 @@ import SetupPage from "./pages/SetupPage";
 
 export default function App() {
   const [state, setState] = useState(loadState);
+  const [theme, setTheme] = useState(loadTheme);
   const [tab, setTab] = useState("schedule");
   const [unlocked, setUnlocked] = useState(false);
   const [pinPrompt, setPinPrompt] = useState(false);
@@ -34,6 +37,13 @@ export default function App() {
   useEffect(() => {
     saveState(state);
   }, [state]);
+
+  useEffect(() => {
+    applyTheme(theme);
+    saveTheme(theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 
   const canEdit = !state.pin || unlocked;
   const requireEdit = (fn) => {
@@ -86,27 +96,41 @@ export default function App() {
     [groupsComplete, groupData, state.playinWinner, state.teams],
   );
 
-  const bracket = useMemo(() => seedBracket(groupData, thirdPlace), [thirdPlace, groupData]);
+  const bracket = useMemo(
+    () => (state.locked ? seedBracket(groupData, thirdPlace, groupsComplete) : null),
+    [state.locked, thirdPlace, groupData, groupsComplete],
+  );
 
-  const koWinner = (slot) => state.ko[slot]?.winner || null;
+  const bracketReady = Boolean(bracket?.ready);
+  const koWinner = (slot) => (bracketReady ? state.ko[slot]?.winner || null : null);
   const sf1 =
-    bracket && koWinner("QF1") && koWinner("QF2")
-      ? { a: koWinner("QF1"), b: koWinner("QF2") }
-      : null;
+    bracketReady && state.ko.QF1?.winner && state.ko.QF2?.winner
+      ? { a: state.ko.QF1.winner, b: state.ko.QF2.winner, scorable: true }
+      : { a: null, b: null, aLabel: "Winner QF1", bLabel: "Winner QF2", scorable: false };
   const sf2 =
-    bracket && koWinner("QF3") && koWinner("QF4")
-      ? { a: koWinner("QF3"), b: koWinner("QF4") }
-      : null;
+    bracketReady && state.ko.QF3?.winner && state.ko.QF4?.winner
+      ? { a: state.ko.QF3.winner, b: state.ko.QF4.winner, scorable: true }
+      : { a: null, b: null, aLabel: "Winner QF3", bLabel: "Winner QF4", scorable: false };
   const finalists =
-    koWinner("SF1") && koWinner("SF2") ? { a: koWinner("SF1"), b: koWinner("SF2") } : null;
+    bracketReady && koWinner("SF1") && koWinner("SF2")
+      ? { a: koWinner("SF1"), b: koWinner("SF2") }
+      : null;
+  const finalPreview = finalists || {
+    a: null,
+    b: null,
+    aLabel: "Winner SF1",
+    bLabel: "Winner SF2",
+  };
   const tpTeams =
-    state.ko.SF1?.winner && state.ko.SF2?.winner
+    bracketReady && state.ko.SF1?.winner && state.ko.SF2?.winner
       ? {
           a: [state.ko.SF1.a, state.ko.SF1.b].find((x) => x !== state.ko.SF1.winner),
           b: [state.ko.SF2.a, state.ko.SF2.b].find((x) => x !== state.ko.SF2.winner),
         }
       : null;
-  const finalGames = state.ko.F || [];
+  const finalGames = bracketReady ? state.ko.F || [] : [];
+  const finalBestOf = state.finalBestOf || 3;
+  const finalWinsNeeded = winsNeeded(finalBestOf);
   const finalTally = finalists
     ? {
         a: finalGames.filter((w) => w === finalists.a).length,
@@ -114,8 +138,40 @@ export default function App() {
       }
     : null;
   const champion =
-    finalTally && (finalTally.a === 2 ? finalists.a : finalTally.b === 2 ? finalists.b : null);
-  const thirdPlaceWinner = state.ko.TP?.winner;
+    finalTally &&
+    (finalTally.a >= finalWinsNeeded
+      ? finalists.a
+      : finalTally.b >= finalWinsNeeded
+        ? finalists.b
+        : null);
+  const thirdPlaceWinner = bracketReady ? state.ko.TP?.winner : null;
+
+  // If group stage (or play-in) is no longer complete, wipe knockout leftovers
+  useEffect(() => {
+    if (!state.locked) return;
+    const hasKo =
+      (state.ko.F || []).length > 0 ||
+      ["QF1", "QF2", "QF3", "QF4", "SF1", "SF2", "TP"].some((k) => state.ko[k]);
+    const clearedKo = {
+      QF1: null,
+      QF2: null,
+      QF3: null,
+      QF4: null,
+      SF1: null,
+      SF2: null,
+      TP: null,
+      F: [],
+    };
+    if (!groupsComplete) {
+      if (hasKo || state.playinWinner) {
+        setState((s) => ({ ...s, playinWinner: null, ko: clearedKo }));
+      }
+      return;
+    }
+    if (thirdPlace?.playinNeeded && hasKo) {
+      setState((s) => ({ ...s, ko: clearedKo }));
+    }
+  }, [state.locked, groupsComplete, thirdPlace?.playinNeeded, state.ko, state.playinWinner]);
 
   const leaderboards = useMemo(() => {
     if (!state.locked) return null;
@@ -135,11 +191,6 @@ export default function App() {
       winMachine: [...rows].sort((a, b) => b.totalWins - a.totalWins),
     };
   }, [state, matches, finalGames]);
-
-  const nextGame = useMemo(() => {
-    for (const g of flatGames(matches)) if (!state.results[g.id]?.winner) return { match: g.match, game: g };
-    return null;
-  }, [matches, state.results]);
 
   const groupTieAlerts = useMemo(() => {
     const alerts = [];
@@ -271,36 +322,29 @@ export default function App() {
 
   return (
     <div
-      className="min-h-screen text-slate-100"
-      style={{
-        background: "linear-gradient(175deg,#0b0f1e 0%,#141a33 55%,#1a1230 100%)",
-        fontFamily: "'Trebuchet MS', 'Arial Narrow', system-ui, sans-serif",
-      }}
+      className="min-h-screen text-slate-100 vegas-strip"
+      style={{ background: "var(--vc-page)" }}
     >
       {champion && <Confetti />}
 
       <header
-        className="sticky top-0 z-40 backdrop-blur-md border-b border-amber-500/20"
-        style={{ background: "rgba(11,15,30,0.9)" }}
+        className="sticky top-0 z-40 backdrop-blur-md border-b border-[#ffd700]/25"
+        style={{ background: "var(--vc-header)" }}
       >
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-4xl">🏆</span>
-            <div>
-              <h1
-                className="font-black tracking-[0.18em] text-amber-400 text-[28px] sm:text-[32px] leading-tight uppercase"
-                style={{ textShadow: "0 0 24px rgba(245,200,66,0.45)" }}
-              >
-                Vegas Cup 2026
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-400 tracking-[0.2em] uppercase">
-                House World Cup · 9 Nations · 2 Days
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+        <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
+          <VegasLogo />
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className="theme-toggle"
+            >
+              {theme === "dark" ? "☀ Light" : "☾ Dark"}
+            </button>
             {state.pin && (
               <button
+                type="button"
                 onClick={() => (unlocked ? setUnlocked(false) : setPinPrompt(true))}
                 className={`min-h-[44px] text-sm px-3 py-2 rounded-xl border font-bold ${
                   unlocked
@@ -311,11 +355,8 @@ export default function App() {
                 {unlocked ? "🔓 Ref" : "🔒"}
               </button>
             )}
-            <button
-              onClick={undo}
-              className="min-h-[44px] text-sm px-3 py-2 rounded-xl border border-slate-600 text-slate-400 hover:border-slate-400 font-bold"
-            >
-              ↩️ Undo
+            <button type="button" onClick={undo} className="header-undo text-sm">
+              ↩ Undo
             </button>
           </div>
         </div>
@@ -326,8 +367,8 @@ export default function App() {
               onClick={() => setTab(k)}
               className={`whitespace-nowrap min-h-[44px] px-5 py-2.5 rounded-full text-sm sm:text-base font-bold tracking-wide transition-all ${
                 tab === k
-                  ? "bg-amber-400 text-slate-900 shadow-lg shadow-amber-500/25"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                  ? "neon-tab-active"
+                  : "text-slate-400 hover:text-[#ffd700] hover:bg-[#ffd700]/5 border border-transparent hover:border-[#ffd700]/25"
               }`}
             >
               {label}
@@ -355,7 +396,6 @@ export default function App() {
           <SchedulePage
             matches={matches}
             results={state.results}
-            nextGame={nextGame}
             groupsComplete={groupsComplete}
             teamById={teamById}
             requireEdit={requireEdit}
@@ -392,6 +432,7 @@ export default function App() {
             sf1={sf1}
             sf2={sf2}
             finalists={finalists}
+            finalPreview={finalPreview}
             tpTeams={tpTeams}
             finalGames={finalGames}
             finalTally={finalTally}
@@ -399,6 +440,9 @@ export default function App() {
             thirdPlaceWinner={thirdPlaceWinner}
             addFinalGame={addFinalGame}
             resetFinal={resetFinal}
+            finalBestOf={finalBestOf}
+            finalWinsNeeded={finalWinsNeeded}
+            bracketReady={bracketReady}
           />
         )}
 
@@ -425,6 +469,8 @@ export default function App() {
             fileRef={fileRef}
             fullReset={fullReset}
             confirmReset={confirmReset}
+            theme={theme}
+            toggleTheme={toggleTheme}
           />
         )}
       </main>
@@ -474,7 +520,7 @@ export default function App() {
       )}
 
       {toast && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full bg-slate-800 border border-amber-500/40 text-base font-bold shadow-xl">
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full bg-slate-800 border border-amber-500/40 text-base font-bold shadow-xl text-slate-100">
           {toast}
         </div>
       )}

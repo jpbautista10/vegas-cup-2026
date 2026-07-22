@@ -1,7 +1,7 @@
 import { GROUPS } from "../lib/constants";
-import { flagOf } from "../lib/flags";
 import { scenarioBadge } from "../lib/standings";
 import Chip from "../components/Chip";
+import Flag from "../components/Flag";
 import TieResolver from "../components/UI";
 
 export default function GroupsPage({
@@ -191,9 +191,9 @@ export default function GroupsPage({
                         setTimeout(() => setCelebrate(null), 2500);
                       })
                     }
-                    className="flex-1 min-h-[52px] py-3 rounded-xl border-2 border-amber-500/50 bg-slate-900 font-bold text-base hover:bg-amber-500/20 transition-colors"
+                    className="flex-1 min-h-[52px] py-3 rounded-xl border-2 border-amber-500/50 bg-slate-900 font-bold text-base hover:bg-amber-500/20 transition-colors inline-flex items-center justify-center gap-2"
                   >
-                    {flagOf(teamById(t.id)?.name)} {teamById(t.id)?.name} won
+                    <Flag name={teamById(t.id)?.name} size="md" /> {teamById(t.id)?.name} won
                   </button>
                 ))}
               </div>

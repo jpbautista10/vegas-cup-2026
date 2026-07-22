@@ -1,14 +1,74 @@
 import { GROUPS } from "./constants";
 
-/** Seed QFs from group winners / runners-up / wildcards, applying same-group swap rule. */
-export function seedBracket(groupData, thirdPlace) {
-  if (!thirdPlace || thirdPlace.playinNeeded) return null;
+export const BRACKET_SLOTS = {
+  QF1: {
+    aLabel: "Winner Group A",
+    bLabel: "Wildcard 1 (best 3rd)",
+    tag: "Winner A vs Wildcard 1",
+  },
+  QF2: {
+    aLabel: "Winner Group B",
+    bLabel: "Wildcard 2 (2nd-best 3rd)",
+    tag: "Winner B vs Wildcard 2",
+  },
+  QF3: {
+    aLabel: "Winner Group C",
+    bLabel: "Runner-up Group A",
+    tag: "Winner C vs Runner-up A",
+  },
+  QF4: {
+    aLabel: "Runner-up Group B",
+    bLabel: "Runner-up Group C",
+    tag: "Runner-up B vs Runner-up C",
+  },
+};
+
+function slot(key, a = null, b = null, extra = {}) {
+  const meta = BRACKET_SLOTS[key];
+  return {
+    a,
+    b,
+    aLabel: meta.aLabel,
+    bLabel: meta.bLabel,
+    tag: meta.tag,
+    scorable: false,
+    ...extra,
+  };
+}
+
+/** Always returns a QF bracket view — placeholders until groups (+ play-in) resolve. */
+export function seedBracket(groupData, thirdPlace, groupsComplete) {
+  // Empty / in-progress group stage: show structure only
+  if (!groupsComplete || !thirdPlace) {
+    return {
+      QF1: slot("QF1"),
+      QF2: slot("QF2"),
+      QF3: slot("QF3"),
+      QF4: slot("QF4"),
+      ready: false,
+      status: "groups",
+    };
+  }
+
   const W = {};
   const RU = {};
   GROUPS.forEach((g) => {
     W[g] = groupData[g].order[0];
     RU[g] = groupData[g].order[1];
   });
+
+  // Play-in pending: known winners/RUs, wildcards TBD
+  if (thirdPlace.playinNeeded) {
+    return {
+      QF1: slot("QF1", W.A, null, { bLabel: "Wildcard 1 (flip-cup play-in)" }),
+      QF2: slot("QF2", W.B, null, { bLabel: "Wildcard 2 (flip-cup play-in)" }),
+      QF3: slot("QF3", W.C, RU.A),
+      QF4: slot("QF4", RU.B, RU.C),
+      ready: false,
+      status: "playin",
+    };
+  }
+
   let wc1 = thirdPlace.ranked[0];
   let wc2 = thirdPlace.ranked[1];
   if (wc1.group === "A" || wc2.group === "B") {
@@ -16,11 +76,14 @@ export function seedBracket(groupData, thirdPlace) {
       [wc1, wc2] = [wc2, wc1];
     }
   }
+
   return {
-    QF1: { a: W.A, b: wc1.id, tag: "Winner A vs Wildcard 1" },
-    QF2: { a: W.B, b: wc2.id, tag: "Winner B vs Wildcard 2" },
-    QF3: { a: W.C, b: RU.A, tag: "Winner C vs Runner-up A" },
-    QF4: { a: RU.B, b: RU.C, tag: "Runner-up B vs Runner-up C" },
+    QF1: slot("QF1", W.A, wc1.id, { scorable: true }),
+    QF2: slot("QF2", W.B, wc2.id, { scorable: true }),
+    QF3: slot("QF3", W.C, RU.A, { scorable: true }),
+    QF4: slot("QF4", RU.B, RU.C, { scorable: true }),
+    ready: true,
+    status: "live",
   };
 }
 
