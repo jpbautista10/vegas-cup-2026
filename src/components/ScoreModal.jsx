@@ -56,7 +56,7 @@ export default function ScoreModal({ data, teamById, existing, onSave, onClear, 
           onClick={() => onSave(game.id, winner, margin)}
           className="flex-1 min-h-[48px] rounded-xl bg-amber-400 text-slate-900 font-black text-base disabled:opacity-40"
         >
-          ✅ Save result
+          ✅ {existing ? "Update result" : "Save result"}
         </button>
         {existing && (
           <button

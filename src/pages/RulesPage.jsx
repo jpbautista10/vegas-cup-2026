@@ -94,6 +94,12 @@ export default function RulesPage() {
           declare before the match.
         </p>
       </R>
+      <R t="🥉 BRONZE — Flip Cup, Best of N">
+        <p>
+          SF losers play Flip Cup for 3rd place. Series length is set in <b>Setup → Bronze format</b>{" "}
+          (default best of 5). First to a majority of games wins the bronze.
+        </p>
+      </R>
       <R t="🏆 THE FINAL — Beer Pong, Best of N">
         <p>
           Final length is configurable in <b>Setup → Final format</b> (default best of 3). First to a majority

@@ -61,7 +61,7 @@ export function MidConnector() {
   );
 }
 
-export function BMatch({ slot, pair, result, teamById, onClick, celebrate }) {
+export function BMatch({ slot, pair, result, teamById, onClick, celebrate, gameLabel }) {
   const winner = result?.winner;
   const rows = pair
     ? [
@@ -93,11 +93,18 @@ export function BMatch({ slot, pair, result, teamById, onClick, celebrate }) {
           winner ? "bg-teal-400/15 text-teal-300" : "bg-slate-800/50 text-slate-400"
         }`}
       >
-        <span>{slot}</span>
+        <span className="inline-flex items-center gap-1.5">
+          {gameLabel && <span className="text-amber-400 tracking-widest">{gameLabel}</span>}
+          <span>{slot}</span>
+        </span>
         {winner ? (
-          <span>FT</span>
+          <span className="text-amber-400/90">Edit</span>
         ) : scorable ? (
           <span className="text-amber-400/90">Tap to score</span>
+        ) : bothSet ? (
+          <span>Preview</span>
+        ) : pair?.a || pair?.b ? (
+          <span className="text-sky-300">Filling</span>
         ) : (
           <span>Preview</span>
         )}
@@ -130,12 +137,13 @@ export function BMatch({ slot, pair, result, teamById, onClick, celebrate }) {
   );
 }
 
-export function Board({ title, rows, value, unit, teamById }) {
+export function Board({ title, subtitle, rows, value, unit, teamById }) {
   return (
     <div className="rounded-2xl border border-slate-700/60 bg-slate-900/40 overflow-hidden">
-      <p className="px-4 py-3 text-base sm:text-lg font-black tracking-wider text-amber-300 border-b border-slate-800 bg-amber-500/10">
-        {title}
-      </p>
+      <div className="px-4 py-3 border-b border-slate-800 bg-amber-500/10">
+        <p className="text-base sm:text-lg font-black tracking-wider text-amber-300">{title}</p>
+        {subtitle && <p className="text-xs text-slate-500 font-semibold mt-1 leading-snug">{subtitle}</p>}
+      </div>
       {rows.slice(0, 5).map((r, i) => (
         <div
           key={r.team.id}

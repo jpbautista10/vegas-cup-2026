@@ -218,6 +218,45 @@ export default function SetupPage({
         )}
       </Section>
 
+      <Section title="🥉 Bronze format">
+        <p className="text-base text-slate-400 mb-3 leading-relaxed">
+          Flip Cup bronze medal series. First team to{" "}
+          <b className="text-amber-400">{winsNeeded(state.bronzeBestOf || 5)}</b> wins takes 3rd place.
+          Editable until the first bronze game is recorded
+          {state.locked ? " (even after the tournament has started)" : ""}.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {FINAL_BEST_OF_OPTIONS.map((n) => {
+            const active = (state.bronzeBestOf || 5) === n;
+            const bronzeStarted = Array.isArray(state.ko?.TP)
+              ? state.ko.TP.length > 0
+              : Boolean(state.ko?.TP?.winner);
+            return (
+              <button
+                key={n}
+                type="button"
+                disabled={bronzeStarted}
+                onClick={() =>
+                  requireEdit(() => setState((s) => ({ ...s, bronzeBestOf: n })))
+                }
+                className={`min-h-[48px] px-5 py-3 rounded-xl border-2 font-black text-base transition-all disabled:opacity-40 ${
+                  active
+                    ? "border-amber-400 bg-amber-400 text-slate-900"
+                    : "border-slate-600 text-slate-300 hover:border-amber-400/50"
+                }`}
+              >
+                Best of {n}
+              </button>
+            );
+          })}
+        </div>
+        {(Array.isArray(state.ko?.TP) ? state.ko.TP.length > 0 : Boolean(state.ko?.TP?.winner)) && (
+          <p className="text-sm text-rose-400 font-bold mt-3">
+            Bronze already underway — use Reset bronze on the Bracket tab to change length.
+          </p>
+        )}
+      </Section>
+
       <Section title="🔐 Ref PIN">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <input

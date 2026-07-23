@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { GROUPS, DEFAULT_STATE, uid, deep, winsNeeded } from "./lib/constants";
 import { flagOf } from "./lib/flags";
 import { buildSchedule } from "./lib/schedule";
-import { teamStats } from "./lib/stats";
+import { fullTeamStats, finalGameWinner, koLoser, seriesGames } from "./lib/stats";
 import { sortGroup } from "./lib/standings";
 import { seedBracket, rankThirdPlace } from "./lib/bracket";
 import { loadState, saveState } from "./lib/storage";
@@ -106,40 +106,71 @@ export default function App() {
 
   const bracketReady = Boolean(bracket?.ready);
   const koWinner = (slot) => (bracketReady ? state.ko[slot]?.winner || null : null);
-  const sf1 =
-    bracketReady && state.ko.QF1?.winner && state.ko.QF2?.winner
-      ? { a: state.ko.QF1.winner, b: state.ko.QF2.winner, scorable: true }
-      : { a: null, b: null, aLabel: "Winner QF1", bLabel: "Winner QF2", scorable: false };
-  const sf2 =
-    bracketReady && state.ko.QF3?.winner && state.ko.QF4?.winner
-      ? { a: state.ko.QF3.winner, b: state.ko.QF4.winner, scorable: true }
-      : { a: null, b: null, aLabel: "Winner QF3", bLabel: "Winner QF4", scorable: false };
+
+  // Fill SF as each QF completes (don't wait for both sides)
+  const sf1 = bracketReady
+    ? {
+        a: state.ko.QF1?.winner || null,
+        b: state.ko.QF2?.winner || null,
+        aLabel: "Winner QF1",
+        bLabel: "Winner QF2",
+        scorable: Boolean(state.ko.QF1?.winner && state.ko.QF2?.winner),
+      }
+    : { a: null, b: null, aLabel: "Winner QF1", bLabel: "Winner QF2", scorable: false };
+  const sf2 = bracketReady
+    ? {
+        a: state.ko.QF3?.winner || null,
+        b: state.ko.QF4?.winner || null,
+        aLabel: "Winner QF3",
+        bLabel: "Winner QF4",
+        scorable: Boolean(state.ko.QF3?.winner && state.ko.QF4?.winner),
+      }
+    : { a: null, b: null, aLabel: "Winner QF3", bLabel: "Winner QF4", scorable: false };
+
+  // Fill Final / Bronze as each SF completes (don't wait for both)
+  const sf1Winner = koWinner("SF1");
+  const sf2Winner = koWinner("SF2");
+  const sf1Loser = bracketReady ? koLoser(state.ko.SF1, sf1) : null;
+  const sf2Loser = bracketReady ? koLoser(state.ko.SF2, sf2) : null;
+
   const finalists =
-    bracketReady && koWinner("SF1") && koWinner("SF2")
-      ? { a: koWinner("SF1"), b: koWinner("SF2") }
-      : null;
-  const finalPreview = finalists || {
-    a: null,
-    b: null,
+    bracketReady && sf1Winner && sf2Winner ? { a: sf1Winner, b: sf2Winner } : null;
+  const finalPreview = {
+    a: sf1Winner,
+    b: sf2Winner,
     aLabel: "Winner SF1",
     bLabel: "Winner SF2",
   };
   const tpTeams =
-    bracketReady && state.ko.SF1?.winner && state.ko.SF2?.winner
+    bracketReady && (sf1Loser || sf2Loser)
       ? {
-          a: [state.ko.SF1.a, state.ko.SF1.b].find((x) => x !== state.ko.SF1.winner),
-          b: [state.ko.SF2.a, state.ko.SF2.b].find((x) => x !== state.ko.SF2.winner),
+          a: sf1Loser,
+          b: sf2Loser,
+          aLabel: "Loser SF1",
+          bLabel: "Loser SF2",
+          // Bronze only scorable once both losers are known
+          scorable: Boolean(sf1Loser && sf2Loser),
         }
       : null;
-  const finalGames = bracketReady ? state.ko.F || [] : [];
+  const finalGames = bracketReady ? seriesGames(state.ko.F) : [];
+  const bronzeGames = bracketReady ? seriesGames(state.ko.TP) : [];
   const finalBestOf = state.finalBestOf || 3;
+  const bronzeBestOf = state.bronzeBestOf || 5;
   const finalWinsNeeded = winsNeeded(finalBestOf);
+  const bronzeWinsNeeded = winsNeeded(bronzeBestOf);
   const finalTally = finalists
     ? {
-        a: finalGames.filter((w) => w === finalists.a).length,
-        b: finalGames.filter((w) => w === finalists.b).length,
+        a: finalGames.filter((g) => finalGameWinner(g) === finalists.a).length,
+        b: finalGames.filter((g) => finalGameWinner(g) === finalists.b).length,
       }
     : null;
+  const bronzeTally =
+    tpTeams?.a && tpTeams?.b
+      ? {
+          a: bronzeGames.filter((g) => finalGameWinner(g) === tpTeams.a).length,
+          b: bronzeGames.filter((g) => finalGameWinner(g) === tpTeams.b).length,
+        }
+      : null;
   const champion =
     finalTally &&
     (finalTally.a >= finalWinsNeeded
@@ -147,14 +178,21 @@ export default function App() {
       : finalTally.b >= finalWinsNeeded
         ? finalists.b
         : null);
-  const thirdPlaceWinner = bracketReady ? state.ko.TP?.winner : null;
+  const thirdPlaceWinner =
+    bronzeTally &&
+    (bronzeTally.a >= bronzeWinsNeeded
+      ? tpTeams.a
+      : bronzeTally.b >= bronzeWinsNeeded
+        ? tpTeams.b
+        : null);
 
   // If group stage (or play-in) is no longer complete, wipe knockout leftovers
   useEffect(() => {
     if (!state.locked) return;
     const hasKo =
-      (state.ko.F || []).length > 0 ||
-      ["QF1", "QF2", "QF3", "QF4", "SF1", "SF2", "TP"].some((k) => state.ko[k]);
+      seriesGames(state.ko.F).length > 0 ||
+      seriesGames(state.ko.TP).length > 0 ||
+      ["QF1", "QF2", "QF3", "QF4", "SF1", "SF2"].some((k) => state.ko[k]);
     const clearedKo = {
       QF1: null,
       QF2: null,
@@ -162,7 +200,7 @@ export default function App() {
       QF4: null,
       SF1: null,
       SF2: null,
-      TP: null,
+      TP: [],
       F: [],
     };
     if (!groupsComplete) {
@@ -179,12 +217,13 @@ export default function App() {
   const leaderboards = useMemo(() => {
     if (!state.locked) return null;
     const rows = state.teams.map((t) => {
-      const s = teamStats(t.id, matches, state.results);
+      const s = fullTeamStats(t.id, matches, state.results, state.ko);
       let koWins = 0;
-      ["QF1", "QF2", "QF3", "QF4", "SF1", "SF2", "TP"].forEach((k) => {
+      ["QF1", "QF2", "QF3", "QF4", "SF1", "SF2"].forEach((k) => {
         if (state.ko[k]?.winner === t.id) koWins++;
       });
-      koWins += finalGames.filter((w) => w === t.id).length;
+      if (thirdPlaceWinner === t.id) koWins++;
+      koWins += finalGames.filter((g) => finalGameWinner(g) === t.id).length;
       return { team: t, ...s, koWins, totalWins: s.W + koWins };
     });
     return {
@@ -193,7 +232,7 @@ export default function App() {
       diffKings: [...rows].sort((a, b) => b.diff - a.diff),
       winMachine: [...rows].sort((a, b) => b.totalWins - a.totalWins),
     };
-  }, [state, matches, finalGames]);
+  }, [state.locked, state.teams, state.results, state.ko, matches, finalGames, thirdPlaceWinner]);
 
   const groupTieAlerts = useMemo(() => {
     const alerts = [];
@@ -208,7 +247,14 @@ export default function App() {
 
   const saveScore = (gameId, winner, margin) => {
     pushHistory();
-    setState((s) => ({ ...s, results: { ...s.results, [gameId]: { winner, margin: Number(margin) } } }));
+    const nextMargin = Number(margin);
+    setState((s) => ({
+      ...s,
+      results: {
+        ...s.results,
+        [gameId]: { winner, margin: nextMargin },
+      },
+    }));
     setScoreModal(null);
     const t = teamById(winner);
     flash(`✅ ${flagOf(t?.name)} ${t?.name} wins!`);
@@ -221,22 +267,100 @@ export default function App() {
       return { ...s, results: r };
     });
     setScoreModal(null);
+    flash("Result cleared");
   };
   const saveKO = (slot, payload) => {
     pushHistory();
-    setState((s) => ({ ...s, ko: { ...s.ko, [slot]: payload } }));
+    const normalized = {
+      winner: payload.winner,
+      a: payload.a ?? null,
+      b: payload.b ?? null,
+      score: payload.score,
+      margin: payload.margin != null ? Number(payload.margin) : undefined,
+    };
+    if (slot === "F" || slot === "TP") {
+      const entry =
+        slot === "F"
+          ? {
+              winner: normalized.winner,
+              margin: normalized.margin,
+              a: normalized.a,
+              b: normalized.b,
+            }
+          : {
+              winner: normalized.winner,
+              a: normalized.a,
+              b: normalized.b,
+            };
+      setState((s) => ({
+        ...s,
+        ko: {
+          ...s.ko,
+          [slot]: [...seriesGames(s.ko[slot]), entry],
+        },
+      }));
+      setKoModal(null);
+      flash(
+        slot === "F"
+          ? `✅ ${flagOf(teamById(normalized.winner)?.name)} takes the game!`
+          : `✅ ${flagOf(teamById(normalized.winner)?.name)} takes the bronze game!`,
+      );
+      return;
+    }
+    setState((s) => {
+      const prev = s.ko[slot];
+      const winnerChanged = Boolean(prev?.winner && prev.winner !== normalized.winner);
+      const nextKo = { ...s.ko, [slot]: normalized };
+      // Winner change → wipe dependent rounds so Final/Bronze/stats stay consistent
+      if (winnerChanged) {
+        if (slot === "QF1" || slot === "QF2") {
+          nextKo.SF1 = null;
+          nextKo.TP = [];
+          nextKo.F = [];
+        } else if (slot === "QF3" || slot === "QF4") {
+          nextKo.SF2 = null;
+          nextKo.TP = [];
+          nextKo.F = [];
+        } else if (slot === "SF1" || slot === "SF2") {
+          nextKo.TP = [];
+          nextKo.F = [];
+        }
+      }
+      return { ...s, ko: nextKo };
+    });
     setKoModal(null);
-    setCelebrate(payload.winner);
+    setCelebrate(normalized.winner);
     setTimeout(() => setCelebrate(null), 2500);
-    flash(`🚀 ${flagOf(teamById(payload.winner)?.name)} advances!`);
+    flash(`🔄 ${flagOf(teamById(normalized.winner)?.name)} result saved`);
   };
-  const addFinalGame = (winnerId) => {
+  const clearKO = (slot) => {
     pushHistory();
-    setState((s) => ({ ...s, ko: { ...s.ko, F: [...(s.ko.F || []), winnerId] } }));
+    setState((s) => {
+      const nextKo = { ...s.ko, [slot]: slot === "TP" || slot === "F" ? [] : null };
+      if (slot === "QF1" || slot === "QF2") {
+        nextKo.SF1 = null;
+        nextKo.TP = [];
+        nextKo.F = [];
+      } else if (slot === "QF3" || slot === "QF4") {
+        nextKo.SF2 = null;
+        nextKo.TP = [];
+        nextKo.F = [];
+      } else if (slot === "SF1" || slot === "SF2") {
+        nextKo.TP = [];
+        nextKo.F = [];
+      }
+      return { ...s, ko: nextKo };
+    });
+    setKoModal(null);
+    flash("KO result cleared");
   };
   const resetFinal = () => {
     pushHistory();
     setState((s) => ({ ...s, ko: { ...s.ko, F: [] } }));
+  };
+  const resetBronze = () => {
+    pushHistory();
+    setState((s) => ({ ...s, ko: { ...s.ko, TP: [] } }));
   };
 
   const addTeam = () => {
@@ -331,8 +455,8 @@ export default function App() {
       {champion && <Confetti />}
 
       <header
-        className="sticky top-0 z-40 backdrop-blur-md border-b border-[#ffd700]/25"
-        style={{ background: "var(--vc-header)" }}
+        className="sticky top-0 z-40 border-b border-[#ffd700]/25"
+        style={{ background: "var(--vc-header)", transform: "translateZ(0)" }}
       >
         <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
           <VegasLogo />
@@ -349,13 +473,14 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => (unlocked ? setUnlocked(false) : setPinPrompt(true))}
-                className={`min-h-[44px] text-sm px-3 py-2 rounded-xl border font-bold ${
+                aria-label={unlocked ? "Lock referee edits" : "Unlock referee edits"}
+                className={`min-h-[44px] text-sm px-3 py-2 rounded-xl border font-bold whitespace-nowrap ${
                   unlocked
                     ? "border-emerald-500/50 text-emerald-300"
                     : "border-slate-600 text-slate-400"
                 }`}
               >
-                {unlocked ? "🔓 Ref" : "🔒"}
+                {unlocked ? "🔓" : "🔐"} 🧑‍⚖️ Ref
               </button>
             )}
             <button type="button" onClick={undo} className="header-undo text-sm">
@@ -439,12 +564,16 @@ export default function App() {
             tpTeams={tpTeams}
             finalGames={finalGames}
             finalTally={finalTally}
+            bronzeGames={bronzeGames}
+            bronzeTally={bronzeTally}
             champion={champion}
             thirdPlaceWinner={thirdPlaceWinner}
-            addFinalGame={addFinalGame}
             resetFinal={resetFinal}
+            resetBronze={resetBronze}
             finalBestOf={finalBestOf}
             finalWinsNeeded={finalWinsNeeded}
+            bronzeBestOf={bronzeBestOf}
+            bronzeWinsNeeded={bronzeWinsNeeded}
             bracketReady={bracketReady}
           />
         )}
@@ -480,6 +609,7 @@ export default function App() {
 
       {scoreModal && (
         <ScoreModal
+          key={`score-${scoreModal.game.id}-${state.results[scoreModal.game.id]?.winner || "new"}-${state.results[scoreModal.game.id]?.margin || 0}`}
           data={scoreModal}
           teamById={teamById}
           existing={state.results[scoreModal.game.id]}
@@ -490,7 +620,15 @@ export default function App() {
       )}
 
       {koModal && (
-        <KOModal data={koModal} teamById={teamById} onSave={saveKO} onClose={() => setKoModal(null)} />
+        <KOModal
+          key={`ko-${koModal.slot}-${state.ko[koModal.slot]?.winner || "new"}-${state.ko[koModal.slot]?.margin || 0}`}
+          data={koModal}
+          teamById={teamById}
+          existing={koModal.slot === "F" || koModal.slot === "TP" ? null : state.ko[koModal.slot]}
+          onSave={saveKO}
+          onClear={clearKO}
+          onClose={() => setKoModal(null)}
+        />
       )}
 
       {pinPrompt && (
